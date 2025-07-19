@@ -1,0 +1,269 @@
+# Monitoring Service Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: monitoring-service
+  namespace: ai-planner
+  labels:
+    app: monitoring-service
+    tier: monitoring
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: monitoring-service
+  template:
+    metadata:
+      labels:
+        app: monitoring-service
+        tier: monitoring
+    spec:
+      serviceAccountName: ai-planner-sa
+      containers:
+      - name: monitoring-service
+        image: ai-planner/monitoring-service:latest
+        ports:
+        - containerPort: 8002
+        env:
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: ai-planner-config
+              key: REDIS_HOST
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+# Auth Service Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  namespace: ai-planner
+  labels:
+    app: auth-service
+    tier: security
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+        tier: security
+    spec:
+      serviceAccountName: ai-planner-sa
+      containers:
+      - name: auth-service
+        image: ai-planner/auth-service:latest
+        ports:
+        - containerPort: 8003
+        env:
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: ai-planner-config
+              key: REDIS_HOST
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ai-planner-secrets
+              key: JWT_SECRET_KEY
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8003
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8003
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+# Config Service Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: config-service
+  namespace: ai-planner
+  labels:
+    app: config-service
+    tier: config
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: config-service
+  template:
+    metadata:
+      labels:
+        app: config-service
+        tier: config
+    spec:
+      serviceAccountName: ai-planner-sa
+      containers:
+      - name: config-service
+        image: ai-planner/config-service:latest
+        ports:
+        - containerPort: 8004
+        env:
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: ai-planner-config
+              key: REDIS_HOST
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8004
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8004
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+# Notification Service Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: ai-planner
+  labels:
+    app: notification-service
+    tier: messaging
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+        tier: messaging
+    spec:
+      serviceAccountName: ai-planner-sa
+      containers:
+      - name: notification-service
+        image: ai-planner/notification-service:latest
+        ports:
+        - containerPort: 8005
+        env:
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: ai-planner-config
+              key: REDIS_HOST
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8005
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8005
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+# Services for supporting microservices
+apiVersion: v1
+kind: Service
+metadata:
+  name: monitoring-service
+  namespace: ai-planner
+spec:
+  selector:
+    app: monitoring-service
+  ports:
+  - protocol: TCP
+    port: 8002
+    targetPort: 8002
+    name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: ai-planner
+spec:
+  selector:
+    app: auth-service
+  ports:
+  - protocol: TCP
+    port: 8003
+    targetPort: 8003
+    name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: config-service
+  namespace: ai-planner
+spec:
+  selector:
+    app: config-service
+  ports:
+  - protocol: TCP
+    port: 8004
+    targetPort: 8004
+    name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  namespace: ai-planner
+spec:
+  selector:
+    app: notification-service
+  ports:
+  - protocol: TCP
+    port: 8005
+    targetPort: 8005
+    name: http
