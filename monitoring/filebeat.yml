@@ -1,0 +1,36 @@
+filebeat.inputs:
+- type: log
+  enabled: true
+  paths:
+    - /var/log/app/*.log
+  fields:
+    service: ai-planner
+    environment: production
+  fields_under_root: true
+  multiline.pattern: '^\d{4}-\d{2}-\d{2}'
+  multiline.negate: true
+  multiline.match: after
+
+- type: docker
+  enabled: true
+  containers.ids:
+    - "*"
+  processors:
+    - add_docker_metadata: ~
+
+output.elasticsearch:
+  hosts: ["elasticsearch:9200"]
+  index: "ai-planner-%{+yyyy.MM.dd}"
+  template.name: "ai-planner"
+  template.pattern: "ai-planner-*"
+  template.settings:
+    index.number_of_shards: 1
+    index.number_of_replicas: 0
+
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat
+  keepfiles: 7
+  permissions: 0644
